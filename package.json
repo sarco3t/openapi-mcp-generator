@@ -1,38 +1,50 @@
 {
-    "name": "openapi-mcp-generator",
-    "version": "1.0.4",
-    "description": "Generate MCP server code from OpenAPI specifications",
-    "type": "module",
-    "main": "src/index.js",
-    "bin": {
-        "openapi-mcp-generator": "./src/index.js"
-    },
-    "scripts": {
-        "start": "node src/index.js",
-        "test": "echo \"Error: no test specified\" && exit 1"
-    },
-    "keywords": [
-        "openapi",
-        "mcp",
-        "model-context-protocol",
-        "generator",
-        "llm"
-    ],
-    "author": "Harsha",
-    "license": "MIT",
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/harsha-iiiv/openapi-mcp-generator.git"
-    },
-    "bugs": {
-        "url": "https://github.com/harsha-iiiv/openapi-mcp-generator/issues"
-    },
-    "homepage": "https://github.com/harsha-iiiv/openapi-mcp-generator#readme",
-    "dependencies": {
-        "axios": "^1.6.0",
-        "minimist": "^1.2.8"
-    },
-    "engines": {
-        "node": ">=16.0.0"
-    }
+  "name": "openapi-mcp-generator",
+  "version": "2.0.0",
+  "description": "Generates MCP server code from OpenAPI specifications",
+  "license": "MIT",
+  "author": "Harsha",
+  "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "bin": {
+    "openapi-mcp-generator": "./build/index.js"
+  },
+  "files": [
+    "build"
+  ],
+  "scripts": {
+    "start": "node build/index.js",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc && chmod 755 build/index.js"
+  },
+  "keywords": [
+    "openapi",
+    "mcp",
+    "model-context-protocol",
+    "generator",
+    "llm"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/harsha-iiiv/openapi-mcp-generator.git"
+  },
+  "bugs": {
+    "url": "https://github.com/harsha-iiiv/openapi-mcp-generator/issues"
+  },
+  "homepage": "https://github.com/harsha-iiiv/openapi-mcp-generator#readme",
+  "dependencies": {
+    "@apidevtools/swagger-parser": "^10.1.1",
+    "@modelcontextprotocol/sdk": "^1.9.0",
+    "axios": "^1.8.4",
+    "commander": "^13.1.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  },
+  "peerDependencies": {
+    "@modelcontextprotocol/sdk": "^1.9.0"
+  }
 }
