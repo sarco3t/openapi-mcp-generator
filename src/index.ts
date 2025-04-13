@@ -1,112 +1,226 @@
 #!/usr/bin/env node
-
+/**
+ * OpenAPI to MCP Generator
+ * 
+ * This tool generates a Model Context Protocol (MCP) server from an OpenAPI specification.
+ * It creates a Node.js project that implements MCP over stdio to proxy API requests.
+ */
+import fs from 'fs/promises';
+import path from 'path';
 import { Command } from 'commander';
 import SwaggerParser from '@apidevtools/swagger-parser';
-import type { OpenAPIV3 } from 'openapi-types';
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import {
+import { OpenAPIV3 } from 'openapi-types';
+
+// Import generators
+import { 
     generateMcpServerCode,
     generatePackageJson,
-    generateTsconfigJson,
-    generateGitignore
-} from './generator.js';
+    generateTsconfigJson, 
+    generateGitignore,
+    generateEslintConfig,
+    generateJestConfig,
+    generatePrettierConfig,
+    generateEnvExample,
+    generateOAuth2Docs,
+    generateWebServerCode,
+    generateTestClientHtml
+} from './generator/index.js';
 
-interface CliOptions {
-  input: string;
-  output: string;
-  serverName?: string;
-  serverVersion?: string;
-  baseUrl?: string;
-}
+// Import types
+import { CliOptions } from './types/index.js';
 
+// Configure CLI
 const program = new Command();
 
 program
-  .name('openapi-mcp-generator')
-  .description('Generates a buildable MCP server project (TypeScript) from an OpenAPI specification')
-  // Ensure these option definitions are robust
-  .requiredOption('-i, --input <file_or_url>', 'Path or URL to the OpenAPI specification file (JSON or YAML)')
-  .requiredOption('-o, --output <directory>', 'Path to the directory where the MCP server project will be created (e.g., ./petstore-mcp)')
-  .option('-n, --server-name <name>', 'Name for the generated MCP server package (default: derived from OpenAPI info title)')
-  .option('-v, --server-version <version>', 'Version for the generated MCP server (default: derived from OpenAPI info version or 0.1.0)')
-  .option('-b, --base-url <url>', 'Base URL for the target API. Required if not specified in OpenAPI `servers` or if multiple servers exist.')
-  .version('2.0.0'); // Match package.json version
+    .name('openapi-mcp-generator')
+    .description('Generates a buildable MCP server project (TypeScript) from an OpenAPI specification')
+    .requiredOption('-i, --input <file_or_url>', 'Path or URL to the OpenAPI specification file (JSON or YAML)')
+    .requiredOption('-o, --output <directory>', 'Path to the directory where the MCP server project will be created (e.g., ./petstore-mcp)')
+    .option('-n, --server-name <n>', 'Name for the generated MCP server package (default: derived from OpenAPI info title)')
+    .option('-v, --server-version <version>', 'Version for the generated MCP server (default: derived from OpenAPI info version or 0.1.0)')
+    .option('-b, --base-url <url>', 'Base URL for the target API. Required if not specified in OpenAPI `servers` or if multiple servers exist.')
+    .option('-t, --transport <type>', 'Server transport type: "stdio" or "web" (default: "stdio")')
+    .option('-p, --port <number>', 'Port for web server (used with --transport=web, default: 3000)', (val) => parseInt(val, 10))
+    .option('--force', 'Overwrite existing files without prompting')
+    .version('2.0.0'); // Match package.json version
 
 // Parse arguments explicitly from process.argv
-// This is generally the most reliable way
 program.parse(process.argv);
 
 // Retrieve the options AFTER parsing
-const options = program.opts<CliOptions>();
+const options = program.opts<CliOptions & { force?: boolean }>();
 
+/**
+ * Main function to run the generator
+ */
 async function main() {
-  // Use the parsed options directly
-  const outputDir = options.output;
-  const inputSpec = options.input; // Use the parsed input value
+    // Use the parsed options directly
+    const outputDir = options.output;
+    const inputSpec = options.input;
 
-  const srcDir = path.join(outputDir, 'src');
-  const serverFilePath = path.join(srcDir, 'index.ts');
-  const packageJsonPath = path.join(outputDir, 'package.json');
-  const tsconfigPath = path.join(outputDir, 'tsconfig.json');
-  const gitignorePath = path.join(outputDir, '.gitignore');
+    const srcDir = path.join(outputDir, 'src');
+    const serverFilePath = path.join(srcDir, 'index.ts');
+    const packageJsonPath = path.join(outputDir, 'package.json');
+    const tsconfigPath = path.join(outputDir, 'tsconfig.json');
+    const gitignorePath = path.join(outputDir, '.gitignore');
+    const eslintPath = path.join(outputDir, '.eslintrc.json');
+    const prettierPath = path.join(outputDir, '.prettierrc');
+    const jestConfigPath = path.join(outputDir, 'jest.config.js');
+    const envExamplePath = path.join(outputDir, '.env.example');
+    const docsDir = path.join(outputDir, 'docs');
+    const oauth2DocsPath = path.join(docsDir, 'oauth2-configuration.md');
+    
+    // Web server files (if requested)
+    const webServerPath = path.join(srcDir, 'web-server.ts');
+    const publicDir = path.join(outputDir, 'public');
+    const indexHtmlPath = path.join(publicDir, 'index.html');
 
-  try {
-    // Use the correct inputSpec variable
-    console.error(`Parsing OpenAPI spec: ${inputSpec}`);
-    const api = await SwaggerParser.dereference(inputSpec) as OpenAPIV3.Document;
-    console.error('OpenAPI spec parsed successfully.');
-
-    // Use options directly for name/version/baseUrl determination
-    const serverNameRaw = options.serverName || api.info.title || 'my-mcp-server';
-    const serverName = serverNameRaw.toLowerCase().replace(/[^a-z0-9_-]/g, '-');
-    const serverVersion = options.serverVersion || api.info.version || '0.1.0';
-
-    console.error('Generating server code...');
-    // Pass inputSpec to generator function if needed for comments, otherwise just options
-    const serverTsContent = generateMcpServerCode(api, options, serverName, serverVersion);
-
-    console.error('Generating package.json...');
-    const packageJsonContent = generatePackageJson(serverName, serverVersion);
-
-    console.error('Generating tsconfig.json...');
-    const tsconfigJsonContent = generateTsconfigJson();
-
-    console.error('Generating .gitignore...');
-    const gitignoreContent = generateGitignore();
-
-    console.error(`Creating project directory structure at: ${outputDir}`);
-    await fs.mkdir(srcDir, { recursive: true });
-
-    await fs.writeFile(serverFilePath, serverTsContent);
-    console.error(` -> Created ${serverFilePath}`);
-    await fs.writeFile(packageJsonPath, packageJsonContent);
-    console.error(` -> Created ${packageJsonPath}`);
-    await fs.writeFile(tsconfigPath, tsconfigJsonContent);
-    console.error(` -> Created ${tsconfigPath}`);
-    await fs.writeFile(gitignorePath, gitignoreContent);
-    console.error(` -> Created ${gitignorePath}`);
-
-    console.error("\n---");
-    console.error(`MCP server project '${serverName}' successfully generated at: ${outputDir}`);
-    console.error("\nNext steps:");
-    console.error(`1. Navigate to the directory: cd ${outputDir}`);
-    console.error(`2. Install dependencies: npm install`);
-    console.error(`3. Build the TypeScript code: npm run build`);
-    console.error(`4. Run the server: npm start`);
-    console.error("   (This runs the built JavaScript code in build/index.js)");
-    console.error("---");
-
-  } catch (error) {
-    console.error('\nError generating MCP server project:', error);
     try {
-        await fs.rm(outputDir, { recursive: true, force: true });
-        console.error(`Cleaned up partially created directory: ${outputDir}`);
-    } catch (cleanupError) {
-        console.error(`Failed to cleanup directory ${outputDir}:`, cleanupError);
+        // Check if output directory exists and is not empty
+        if (!options.force) {
+            try {
+                const dirExists = await fs.stat(outputDir).catch(() => false);
+                if (dirExists) {
+                    const files = await fs.readdir(outputDir);
+                    if (files.length > 0) {
+                        console.error(`Error: Output directory ${outputDir} already exists and is not empty.`);
+                        console.error('Use --force to overwrite existing files.');
+                        process.exit(1);
+                    }
+                }
+            } catch (err) {
+                // Directory doesn't exist, which is fine
+            }
+        }
+
+        // Parse OpenAPI spec
+        console.error(`Parsing OpenAPI spec: ${inputSpec}`);
+        const api = await SwaggerParser.dereference(inputSpec) as OpenAPIV3.Document;
+        console.error('OpenAPI spec parsed successfully.');
+
+        // Determine server name and version
+        const serverNameRaw = options.serverName || (api.info?.title || 'my-mcp-server');
+        const serverName = serverNameRaw.toLowerCase().replace(/[^a-z0-9_-]/g, '-');
+        const serverVersion = options.serverVersion || (api.info?.version || '0.1.0');
+
+        console.error('Generating server code...');
+        const serverTsContent = generateMcpServerCode(api, options, serverName, serverVersion);
+
+        console.error('Generating package.json...');
+        const packageJsonContent = generatePackageJson(serverName, serverVersion, options.transport === 'web');
+
+        console.error('Generating tsconfig.json...');
+        const tsconfigJsonContent = generateTsconfigJson();
+
+        console.error('Generating .gitignore...');
+        const gitignoreContent = generateGitignore();
+
+        console.error('Generating ESLint config...');
+        const eslintConfigContent = generateEslintConfig();
+
+        console.error('Generating Prettier config...');
+        const prettierConfigContent = generatePrettierConfig();
+
+        console.error('Generating Jest config...');
+        const jestConfigContent = generateJestConfig();
+
+        console.error('Generating .env.example file...');
+        const envExampleContent = generateEnvExample(api.components?.securitySchemes);
+
+        console.error('Generating OAuth2 documentation...');
+        const oauth2DocsContent = generateOAuth2Docs(api.components?.securitySchemes);
+
+        console.error(`Creating project directory structure at: ${outputDir}`);
+        await fs.mkdir(srcDir, { recursive: true });
+
+        await fs.writeFile(serverFilePath, serverTsContent);
+        console.error(` -> Created ${serverFilePath}`);
+        
+        await fs.writeFile(packageJsonPath, packageJsonContent);
+        console.error(` -> Created ${packageJsonPath}`);
+        
+        await fs.writeFile(tsconfigPath, tsconfigJsonContent);
+        console.error(` -> Created ${tsconfigPath}`);
+        
+        await fs.writeFile(gitignorePath, gitignoreContent);
+        console.error(` -> Created ${gitignorePath}`);
+        
+        await fs.writeFile(eslintPath, eslintConfigContent);
+        console.error(` -> Created ${eslintPath}`);
+        
+        await fs.writeFile(prettierPath, prettierConfigContent);
+        console.error(` -> Created ${prettierPath}`);
+        
+        await fs.writeFile(jestConfigPath, jestConfigContent);
+        console.error(` -> Created ${jestConfigPath}`);
+        
+        await fs.writeFile(envExamplePath, envExampleContent);
+        console.error(` -> Created ${envExamplePath}`);
+        
+        // Only write OAuth2 docs if there are OAuth2 security schemes
+        if (oauth2DocsContent.includes("No OAuth2 security schemes defined")) {
+            console.error(` -> No OAuth2 security schemes found, skipping documentation`);
+        } else {
+            await fs.mkdir(docsDir, { recursive: true });
+            await fs.writeFile(oauth2DocsPath, oauth2DocsContent);
+            console.error(` -> Created ${oauth2DocsPath}`);
+        }
+        
+        // Generate web server files if web transport is requested
+        if (options.transport === 'web') {
+            console.error('Generating web server files...');
+            
+            // Generate web server code
+            const webServerCode = generateWebServerCode(options.port || 3000);
+            await fs.writeFile(webServerPath, webServerCode);
+            console.error(` -> Created ${webServerPath}`);
+            
+            // Create public directory and index.html
+            await fs.mkdir(publicDir, { recursive: true });
+            
+            // Generate test client
+            const indexHtmlContent = generateTestClientHtml(serverName);
+            await fs.writeFile(indexHtmlPath, indexHtmlContent);
+            console.error(` -> Created ${indexHtmlPath}`);
+        }
+
+        console.error("\n---");
+        console.error(`MCP server project '${serverName}' successfully generated at: ${outputDir}`);
+        console.error("\nNext steps:");
+        console.error(`1. Navigate to the directory: cd ${outputDir}`);
+        console.error(`2. Install dependencies: npm install`);
+        
+        if (options.transport === 'web') {
+            console.error(`3. Build the TypeScript code: npm run build`);
+            console.error(`4. Run the server in web mode: npm run start:web`);
+            console.error(`   (This will start a web server on port ${options.port || 3000})`);
+            console.error(`   Access the test client at: http://localhost:${options.port || 3000}`);
+        } else {
+            console.error(`3. Build the TypeScript code: npm run build`);
+            console.error(`4. Run the server: npm start`);
+            console.error(`   (This runs the built JavaScript code in build/index.js)`);
+        }
+        console.error("---");
+
+    } catch (error) {
+        console.error('\nError generating MCP server project:', error);
+        
+        // Only attempt cleanup if the directory exists and force option was used
+        if (options.force) {
+            try {
+                await fs.rm(outputDir, { recursive: true, force: true });
+                console.error(`Cleaned up partially created directory: ${outputDir}`);
+            } catch (cleanupError) {
+                console.error(`Failed to cleanup directory ${outputDir}:`, cleanupError);
+            }
+        }
+        
+        process.exit(1);
     }
-    process.exit(1);
-  }
 }
 
-main();
+main().catch(error => {
+    console.error('Unhandled error:', error);
+    process.exit(1);
+});
