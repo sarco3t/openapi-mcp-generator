@@ -6,7 +6,7 @@
 
 Generate [Model Context Protocol (MCP)](https://modelcontextprotocol.github.io/) servers from OpenAPI specifications.
 
-This CLI tool automates the generation of MCP-compatible servers that proxy requests to existing REST APIs—enabling AI agents and other MCP clients to seamlessly interact with your APIs using either standard input/output or HTTP-based transport.
+This CLI tool automates the generation of MCP-compatible servers that proxy requests to existing REST APIs—enabling AI agents and other MCP clients to seamlessly interact with your APIs using your choice of transport methods.
 
 ---
 
@@ -17,9 +17,9 @@ This CLI tool automates the generation of MCP-compatible servers that proxy requ
 - 🔐 **Authentication Support**: API keys, Bearer tokens, Basic auth, and OAuth2 supported via environment variables.
 - 🧪 **Zod Validation**: Automatically generates Zod schemas from OpenAPI definitions for runtime input validation.
 - ⚙️ **Typed Server**: Fully typed, maintainable TypeScript code output.
-- 💬 **Stdio & Web Transport**: Communicate over stdio or HTTP (beta, SSE support).
+- 🔌 **Multiple Transports**: Communicate over stdio, SSE via Hono, or StreamableHTTP.
 - 🧰 **Project Scaffold**: Generates a complete Node.js project with `tsconfig.json`, `package.json`, and entry point.
-- 🧪 **Built-in HTML Test Client** *(Web mode)*: Test API interactions visually in your browser.
+- 🧪 **Built-in HTML Test Clients**: Test API interactions visually in your browser (for web-based transports).
 
 ---
 
@@ -39,8 +39,11 @@ npm install -g openapi-mcp-generator
 # Generate an MCP server (stdio)
 openapi-mcp-generator --input path/to/openapi.json --output path/to/output/dir
 
-# Generate an MCP web server (beta)
+# Generate an MCP web server with SSE
 openapi-mcp-generator --input path/to/openapi.json --output path/to/output/dir --transport=web --port=3000
+
+# Generate an MCP StreamableHTTP server
+openapi-mcp-generator --input path/to/openapi.json --output path/to/output/dir --transport=streamable-http --port=3000
 ```
 
 ### CLI Options
@@ -52,8 +55,8 @@ openapi-mcp-generator --input path/to/openapi.json --output path/to/output/dir -
 | `--server-name`    | `-n`  | Name of the MCP server (`package.json:name`)                                                         | OpenAPI title or `mcp-api-server` |
 | `--server-version` | `-v`  | Version of the MCP server (`package.json:version`)                                                   | OpenAPI version or `1.0.0`      |
 | `--base-url`       | `-b`  | Base URL for API requests. Required if OpenAPI `servers` missing or ambiguous.                       | Auto-detected if possible       |
-| `--transport`      | `-t`  | Transport mode: `"stdio"` (default) or `"web"` (beta)                                                | `"stdio"`                       |
-| `--port`           | `-p`  | Port for web server mode                                                                             | `3000`                          |
+| `--transport`      | `-t`  | Transport mode: `"stdio"` (default), `"web"`, or `"streamable-http"`                                 | `"stdio"`                       |
+| `--port`           | `-p`  | Port for web-based transports                                                                        | `3000`                          |
 | `--force`          |       | Overwrite existing files in the output directory without confirmation                                | `false`                         |
 ---
 
@@ -66,13 +69,20 @@ The generated project includes:
 ├── .gitignore
 ├── package.json
 ├── tsconfig.json
-└── src/
-    └── index.ts
+├── .env.example
+├── src/
+│   ├── index.ts
+│   └── [transport-specific-files]
+└── public/          # For web-based transports
+    └── index.html   # Test client
 ```
 
-- Uses `axios`, `zod`, `@modelcontextprotocol/sdk`, and `json-schema-to-zod`
-- Secure API key/tokens via environment variables
-- Tool generation for each endpoint
+Core dependencies:
+- `@modelcontextprotocol/sdk` - MCP protocol implementation
+- `axios` - HTTP client for API requests
+- `zod` - Runtime validation
+- `json-schema-to-zod` - Convert JSON Schema to Zod
+- Transport-specific deps (Hono, uuid, etc.)
 
 ---
 
@@ -82,7 +92,7 @@ The generated project includes:
 
 Communicates with MCP clients via standard input/output. Ideal for local development or integration with LLM tools.
 
-### Web Server Mode (Beta)
+### Web Server with SSE
 
 Launches a fully functional HTTP server with:
 
@@ -90,8 +100,34 @@ Launches a fully functional HTTP server with:
 - REST endpoint for client → server communication
 - In-browser test client UI
 - Multi-connection support
+- Built with lightweight Hono framework
 
-> ⚠️ **Note**: Web mode is experimental and may have breaking changes in future updates.
+### StreamableHTTP
+
+Implements the MCP StreamableHTTP transport which offers:
+
+- Stateful JSON-RPC over HTTP POST requests
+- Session management using HTTP headers
+- Proper HTTP response status codes
+- Built-in error handling
+- Compatibility with MCP StreamableHTTPClientTransport
+- In-browser test client UI
+- Built with lightweight Hono framework
+
+### Transport Comparison
+
+| Feature | stdio | web (SSE) | streamable-http |
+|---------|-------|-----------|----------------|
+| Protocol | JSON-RPC over stdio | JSON-RPC over SSE | JSON-RPC over HTTP |
+| Connection | Persistent | Persistent | Request/response |
+| Bidirectional | Yes | Yes | Yes (stateful) |
+| Multiple clients | No | Yes | Yes |
+| Browser compatible | No | Yes | Yes |
+| Firewall friendly | No | Yes | Yes |
+| Load balancing | No | Limited | Yes |
+| Status codes | No | Limited | Full HTTP codes |
+| Headers | No | Limited | Full HTTP headers |
+| Test client | No | Yes | Yes |
 
 ---
 
@@ -117,15 +153,26 @@ npm install
 # Run in stdio mode
 npm start
 
-# Run in web server mode (if generated with --transport=web)
+# Run in web server mode
 npm run start:web
+
+# Run in StreamableHTTP mode
+npm run start:http
 ```
+
+### Testing Web-Based Servers
+
+For web and StreamableHTTP transports, a browser-based test client is automatically generated:
+
+1. Start the server using the appropriate command
+2. Open your browser to `http://localhost:<port>`
+3. Use the test client to interact with your MCP server
 
 ---
 
 ## ⚠️ Requirements
 
-- Node.js v18 or later
+- Node.js v20 or later
 
 ---
 

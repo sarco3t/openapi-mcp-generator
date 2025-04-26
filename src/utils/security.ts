@@ -5,28 +5,37 @@ import { OpenAPIV3 } from 'openapi-types';
 
 /**
  * Get environment variable name for a security scheme
- * 
+ *
  * @param schemeName Security scheme name
  * @param type Type of security credentials
  * @returns Environment variable name
  */
 export function getEnvVarName(
-    schemeName: string, 
-    type: 'API_KEY' | 'BEARER_TOKEN' | 'BASIC_USERNAME' | 'BASIC_PASSWORD' | 'OAUTH_CLIENT_ID' | 'OAUTH_CLIENT_SECRET' | 'OAUTH_TOKEN' | 'OAUTH_SCOPES' | 'OPENID_TOKEN'
+  schemeName: string,
+  type:
+    | 'API_KEY'
+    | 'BEARER_TOKEN'
+    | 'BASIC_USERNAME'
+    | 'BASIC_PASSWORD'
+    | 'OAUTH_CLIENT_ID'
+    | 'OAUTH_CLIENT_SECRET'
+    | 'OAUTH_TOKEN'
+    | 'OAUTH_SCOPES'
+    | 'OPENID_TOKEN'
 ): string {
-    const sanitizedName = schemeName.replace(/[^a-zA-Z0-9]/g, '_').toUpperCase();
-    return `${type}_${sanitizedName}`;
+  const sanitizedName = schemeName.replace(/[^a-zA-Z0-9]/g, '_').toUpperCase();
+  return `${type}_${sanitizedName}`;
 }
 
 /**
  * Generates code for handling API key security
- * 
+ *
  * @param scheme API key security scheme
  * @returns Generated code
  */
 export function generateApiKeySecurityCode(scheme: OpenAPIV3.ApiKeySecurityScheme): string {
-    const schemeName = 'schemeName'; // Placeholder, will be replaced in template
-    return `
+  const schemeName = 'schemeName'; // Placeholder, will be replaced in template
+  return `
     if (scheme?.type === 'apiKey') {
         const apiKey = process.env[\`${getEnvVarName(schemeName, 'API_KEY')}\`];
         if (apiKey) {
@@ -45,12 +54,12 @@ export function generateApiKeySecurityCode(scheme: OpenAPIV3.ApiKeySecuritySchem
 
 /**
  * Generates code for handling HTTP security (Bearer/Basic)
- * 
+ *
  * @returns Generated code
  */
 export function generateHttpSecurityCode(): string {
-    const schemeName = 'schemeName'; // Placeholder, will be replaced in template
-    return `
+  const schemeName = 'schemeName'; // Placeholder, will be replaced in template
+  return `
     else if (scheme?.type === 'http') {
         if (scheme.scheme?.toLowerCase() === 'bearer') {
             const token = process.env[\`${getEnvVarName(schemeName, 'BEARER_TOKEN')}\`];
@@ -70,11 +79,11 @@ export function generateHttpSecurityCode(): string {
 
 /**
  * Generates code for OAuth2 token acquisition
- * 
+ *
  * @returns Generated code for OAuth2 token acquisition
  */
 export function generateOAuth2TokenAcquisitionCode(): string {
-    return `
+  return `
 /**
  * Type definition for cached OAuth tokens
  */
@@ -182,23 +191,23 @@ async function acquireOAuth2Token(schemeName: string, scheme: any): Promise<stri
         return null;
     }
 }
-`; 
+`;
 }
 
 /**
  * Generates code for executing API tools with security handling
- * 
+ *
  * @param securitySchemes Security schemes from OpenAPI spec
  * @returns Generated code for the execute API tool function
  */
 export function generateExecuteApiToolFunction(
-    securitySchemes?: OpenAPIV3.ComponentsObject['securitySchemes']
+  securitySchemes?: OpenAPIV3.ComponentsObject['securitySchemes']
 ): string {
-    // Generate OAuth2 token acquisition function
-    const oauth2TokenAcquisitionCode = generateOAuth2TokenAcquisitionCode();
-    
-    // Generate security handling code for checking, applying security
-    const securityCode = `
+  // Generate OAuth2 token acquisition function
+  const oauth2TokenAcquisitionCode = generateOAuth2TokenAcquisitionCode();
+
+  // Generate security handling code for checking, applying security
+  const securityCode = `
     // Apply security requirements if available
     // Security requirements use OR between array items and AND within each object
     const appliedSecurity = definition.securityRequirements?.find(req => {
@@ -353,8 +362,8 @@ export function generateExecuteApiToolFunction(
     }
     `;
 
-    // Generate complete execute API tool function
-    return `
+  // Generate complete execute API tool function
+  return `
 ${oauth2TokenAcquisitionCode}
 
 /**
@@ -506,79 +515,80 @@ ${securityCode}
 
 /**
  * Gets security scheme documentation for README
- * 
+ *
  * @param securitySchemes Security schemes from OpenAPI spec
  * @returns Documentation for security schemes
  */
 export function getSecuritySchemesDocs(
-    securitySchemes?: OpenAPIV3.ComponentsObject['securitySchemes']
+  securitySchemes?: OpenAPIV3.ComponentsObject['securitySchemes']
 ): string {
-    if (!securitySchemes) return 'No security schemes defined in the OpenAPI spec.';
-    
-    let docs = '';
-    
-    for (const [name, schemeOrRef] of Object.entries(securitySchemes)) {
-        if ('$ref' in schemeOrRef) {
-            docs += `- \`${name}\`: Referenced security scheme (reference not resolved)\n`;
-            continue;
-        }
-        
-        const scheme = schemeOrRef;
-        
-        if (scheme.type === 'apiKey') {
-            const envVar = getEnvVarName(name, 'API_KEY');
-            docs += `- \`${envVar}\`: API key for ${scheme.name} (in ${scheme.in})\n`;
-        }
-        else if (scheme.type === 'http') {
-            if (scheme.scheme?.toLowerCase() === 'bearer') {
-                const envVar = getEnvVarName(name, 'BEARER_TOKEN');
-                docs += `- \`${envVar}\`: Bearer token for authentication\n`;
-            }
-            else if (scheme.scheme?.toLowerCase() === 'basic') {
-                const usernameEnvVar = getEnvVarName(name, 'BASIC_USERNAME');
-                const passwordEnvVar = getEnvVarName(name, 'BASIC_PASSWORD');
-                docs += `- \`${usernameEnvVar}\`: Username for Basic authentication\n`;
-                docs += `- \`${passwordEnvVar}\`: Password for Basic authentication\n`;
-            }
-        }
-        else if (scheme.type === 'oauth2') {
-            const flowTypes = scheme.flows ? Object.keys(scheme.flows) : ['unknown'];
-            
-            // Add client credentials for OAuth2
-            const clientIdVar = getEnvVarName(name, 'OAUTH_CLIENT_ID');
-            const clientSecretVar = getEnvVarName(name, 'OAUTH_CLIENT_SECRET');
-            docs += `- \`${clientIdVar}\`: Client ID for OAuth2 authentication (${flowTypes.join(', ')} flow)\n`;
-            docs += `- \`${clientSecretVar}\`: Client secret for OAuth2 authentication\n`;
-            
-            // Add OAuth token for manual setting
-            const tokenVar = getEnvVarName(name, 'OAUTH_TOKEN');
-            docs += `- \`${tokenVar}\`: OAuth2 token (if not using automatic token acquisition)\n`;
-            
-            // Add scopes env var
-            const scopesVar = getEnvVarName(name, 'OAUTH_SCOPES');
-            docs += `- \`${scopesVar}\`: Space-separated list of OAuth2 scopes to request\n`;
-            
-            // If available, list flow-specific details
-            if (scheme.flows?.clientCredentials) {
-                docs += `  Client Credentials Flow Token URL: ${scheme.flows.clientCredentials.tokenUrl}\n`;
-                
-                // List available scopes if defined
-                if (scheme.flows.clientCredentials.scopes && Object.keys(scheme.flows.clientCredentials.scopes).length > 0) {
-                    docs += `  Available scopes:\n`;
-                    for (const [scope, description] of Object.entries(scheme.flows.clientCredentials.scopes)) {
-                        docs += `  - \`${scope}\`: ${description}\n`;
-                    }
-                }
-            }
-        }
-        else if (scheme.type === 'openIdConnect') {
-            const tokenVar = getEnvVarName(name, 'OPENID_TOKEN');
-            docs += `- \`${tokenVar}\`: OpenID Connect token\n`;
-            if (scheme.openIdConnectUrl) {
-                docs += `  OpenID Connect Discovery URL: ${scheme.openIdConnectUrl}\n`;
-            }
-        }
+  if (!securitySchemes) return 'No security schemes defined in the OpenAPI spec.';
+
+  let docs = '';
+
+  for (const [name, schemeOrRef] of Object.entries(securitySchemes)) {
+    if ('$ref' in schemeOrRef) {
+      docs += `- \`${name}\`: Referenced security scheme (reference not resolved)\n`;
+      continue;
     }
-    
-    return docs;
+
+    const scheme = schemeOrRef;
+
+    if (scheme.type === 'apiKey') {
+      const envVar = getEnvVarName(name, 'API_KEY');
+      docs += `- \`${envVar}\`: API key for ${scheme.name} (in ${scheme.in})\n`;
+    } else if (scheme.type === 'http') {
+      if (scheme.scheme?.toLowerCase() === 'bearer') {
+        const envVar = getEnvVarName(name, 'BEARER_TOKEN');
+        docs += `- \`${envVar}\`: Bearer token for authentication\n`;
+      } else if (scheme.scheme?.toLowerCase() === 'basic') {
+        const usernameEnvVar = getEnvVarName(name, 'BASIC_USERNAME');
+        const passwordEnvVar = getEnvVarName(name, 'BASIC_PASSWORD');
+        docs += `- \`${usernameEnvVar}\`: Username for Basic authentication\n`;
+        docs += `- \`${passwordEnvVar}\`: Password for Basic authentication\n`;
+      }
+    } else if (scheme.type === 'oauth2') {
+      const flowTypes = scheme.flows ? Object.keys(scheme.flows) : ['unknown'];
+
+      // Add client credentials for OAuth2
+      const clientIdVar = getEnvVarName(name, 'OAUTH_CLIENT_ID');
+      const clientSecretVar = getEnvVarName(name, 'OAUTH_CLIENT_SECRET');
+      docs += `- \`${clientIdVar}\`: Client ID for OAuth2 authentication (${flowTypes.join(', ')} flow)\n`;
+      docs += `- \`${clientSecretVar}\`: Client secret for OAuth2 authentication\n`;
+
+      // Add OAuth token for manual setting
+      const tokenVar = getEnvVarName(name, 'OAUTH_TOKEN');
+      docs += `- \`${tokenVar}\`: OAuth2 token (if not using automatic token acquisition)\n`;
+
+      // Add scopes env var
+      const scopesVar = getEnvVarName(name, 'OAUTH_SCOPES');
+      docs += `- \`${scopesVar}\`: Space-separated list of OAuth2 scopes to request\n`;
+
+      // If available, list flow-specific details
+      if (scheme.flows?.clientCredentials) {
+        docs += `  Client Credentials Flow Token URL: ${scheme.flows.clientCredentials.tokenUrl}\n`;
+
+        // List available scopes if defined
+        if (
+          scheme.flows.clientCredentials.scopes &&
+          Object.keys(scheme.flows.clientCredentials.scopes).length > 0
+        ) {
+          docs += `  Available scopes:\n`;
+          for (const [scope, description] of Object.entries(
+            scheme.flows.clientCredentials.scopes
+          )) {
+            docs += `  - \`${scope}\`: ${description}\n`;
+          }
+        }
+      }
+    } else if (scheme.type === 'openIdConnect') {
+      const tokenVar = getEnvVarName(name, 'OPENID_TOKEN');
+      docs += `- \`${tokenVar}\`: OpenID Connect token\n`;
+      if (scheme.openIdConnectUrl) {
+        docs += `  OpenID Connect Discovery URL: ${scheme.openIdConnectUrl}\n`;
+      }
+    }
+  }
+
+  return docs;
 }
