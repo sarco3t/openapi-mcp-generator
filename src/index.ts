@@ -72,7 +72,7 @@ program
     (val) => parseInt(val, 10)
   )
   .option('--force', 'Overwrite existing files without prompting')
-  .version('3.0.0'); // Match package.json version
+  .version('3.1.0'); // Match package.json version
 
 // Check if module is being run directly (not imported)
 const isMainModule = process.argv[1] ===  new URL(import.meta.url).pathname;

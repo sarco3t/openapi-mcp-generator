@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.0] - 2025-05-18
+
+### Added
+- Programmatic API to extract MCP tool definitions from OpenAPI specs
+- New exportable `getToolsFromOpenApi` function for direct integration in code
+- Advanced filtering capabilities for programmatic tool extraction
+- Comprehensive documentation in PROGRAMMATIC_API.md
+- Updated README with programmatic API usage examples
+
+### Changed
+- Improved module structure with better exports
+- Enhanced detection of module execution context
+
 ## [2.0.0] - 2025-04-12
 
 ### Added
