@@ -31,6 +31,9 @@ import {
 // Import types
 import { CliOptions, TransportType } from './types/index.js';
 
+// Export programmatic API
+export { getToolsFromOpenApi, McpToolDefinition, GetToolsOptions } from './api.js';
+
 // Configure CLI
 const program = new Command();
 
@@ -69,18 +72,27 @@ program
     (val) => parseInt(val, 10)
   )
   .option('--force', 'Overwrite existing files without prompting')
-  .version('2.0.0'); // Match package.json version
+  .version('3.0.0'); // Match package.json version
 
-// Parse arguments explicitly from process.argv
-program.parse(process.argv);
+// Check if module is being run directly (not imported)
+const isMainModule = process.argv[1] ===  new URL(import.meta.url).pathname;
 
-// Retrieve the options AFTER parsing
-const options = program.opts<CliOptions & { force?: boolean }>();
+if (isMainModule) {
+  // Parse arguments explicitly from process.argv
+  program.parse(process.argv);
+
+  // Run with the parsed options
+  runGenerator(program.opts<CliOptions & { force?: boolean }>())
+    .catch((error) => {
+      console.error('Unhandled error:', error);
+      process.exit(1);
+    });
+}
 
 /**
  * Main function to run the generator
  */
-async function main() {
+async function runGenerator(options: CliOptions & { force?: boolean }) {
   // Use the parsed options directly
   const outputDir = options.output;
   const inputSpec = options.input;
@@ -275,7 +287,5 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error('Unhandled error:', error);
-  process.exit(1);
-});
+// Export the run function for programmatic usage
+export { runGenerator as generateMcpServer };

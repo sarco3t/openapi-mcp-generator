@@ -58,6 +58,28 @@ openapi-mcp-generator --input path/to/openapi.json --output path/to/output/dir -
 | `--transport`      | `-t`  | Transport mode: `"stdio"` (default), `"web"`, or `"streamable-http"`                                 | `"stdio"`                       |
 | `--port`           | `-p`  | Port for web-based transports                                                                        | `3000`                          |
 | `--force`          |       | Overwrite existing files in the output directory without confirmation                                | `false`                         |
+
+## 📦 Programmatic API
+
+You can also use this package programmatically in your Node.js applications:
+
+```javascript
+import { getToolsFromOpenApi } from 'openapi-mcp-generator';
+
+// Extract MCP tool definitions from an OpenAPI spec
+const tools = await getToolsFromOpenApi('./petstore.json');
+
+// With options
+const filteredTools = await getToolsFromOpenApi('https://example.com/api-spec.json', {
+  baseUrl: 'https://api.example.com',
+  dereference: true,
+  excludeOperationIds: ['deletePet'],
+  filterFn: (tool) => tool.method.toLowerCase() === 'get'
+});
+```
+
+For full documentation of the programmatic API, see [PROGRAMMATIC_API.md](./PROGRAMMATIC_API.md).
+
 ---
 
 ## 🧱 Project Structure
