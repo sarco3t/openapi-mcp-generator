@@ -72,22 +72,17 @@ program
     (val) => parseInt(val, 10)
   )
   .option('--force', 'Overwrite existing files without prompting')
-  .version('3.1.0'); // Match package.json version
+  .version('3.1.1') // Match package.json version
+  .action(options => {
+    runGenerator(options)
+      .catch((error) => {
+        console.error('Unhandled error:', error);
+        process.exit(1);
+      });
+  });
 
-// Check if module is being run directly (not imported)
-const isMainModule = process.argv[1] ===  new URL(import.meta.url).pathname;
-
-if (isMainModule) {
-  // Parse arguments explicitly from process.argv
-  program.parse(process.argv);
-
-  // Run with the parsed options
-  runGenerator(program.opts<CliOptions & { force?: boolean }>())
-    .catch((error) => {
-      console.error('Unhandled error:', error);
-      process.exit(1);
-    });
-}
+// Export the program object for use in bin stub
+export { program };
 
 /**
  * Main function to run the generator
