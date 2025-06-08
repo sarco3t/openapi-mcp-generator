@@ -72,7 +72,7 @@ program
     (val) => parseInt(val, 10)
   )
   .option('--force', 'Overwrite existing files without prompting')
-  .version('3.1.1') // Match package.json version
+  .version('3.1.2') // Match package.json version
   .action(options => {
     runGenerator(options)
       .catch((error) => {

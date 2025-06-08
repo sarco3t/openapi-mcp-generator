@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.2] - 2025-06-08
+
+### Fixed
+- Prevent stack overflow (RangeError: Maximum call stack size exceeded) when processing recursive or cyclic OpenAPI schemas (e.g., self-referencing objects).
+- Added cycle detection to schema mapping, ensuring robust handling of recursive structures.
+
+## [3.1.1] - 2025-05-26
+
+### Added
+- Introduced a new executable command-line script for easier usage in Unix-like environments.
+
+### Changed
+- Use new CLI entry point to use the new `bin/openapi-mcp-generator.js` file.
+- Updated build script to ensure the new CLI file has the correct permissions.
+- Refactored `index.ts` to streamline argument parsing and error handling.
+
+
 ## [3.1.0] - 2025-05-18
 
 ### Added
@@ -17,6 +34,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Improved module structure with better exports
 - Enhanced detection of module execution context
+
+## [3.0.0] - 2025-04-26
+
+### Added
+- Streamable HTTP support for OpenAPI MCP generator, enabling efficient handling of large payloads and real-time data transfer.
+- Major architectural refactor to support streaming responses and requests.
+
+### Fixed
+- Multiple bugs related to HTTP/HTTPS connection handling, stream closure, and error propagation in streaming scenarios.
+- Fixed resource leak issues on server aborts and client disconnects during streaming.
+
+### Changed
+- Major version bump due to breaking changes in API and internal structures to support streaming.
+- Updated documentation to reflect new streaming capabilities and usage instructions.
+- Enhanced performance and robustness of HTTP/HTTPS transport layers.
 
 ## [2.0.0] - 2025-04-12
 
