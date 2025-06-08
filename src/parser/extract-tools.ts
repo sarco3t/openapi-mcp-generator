@@ -153,13 +153,15 @@ export function generateInputSchemaAndDetails(operation: OpenAPIV3.OperationObje
 }
 
 /**
- * Maps an OpenAPI schema to a JSON Schema
+ * Maps an OpenAPI schema to a JSON Schema with cycle protection.
  *
  * @param schema OpenAPI schema object or reference
+ * @param seen WeakSet tracking already visited schema objects
  * @returns JSON Schema representation
  */
 export function mapOpenApiSchemaToJsonSchema(
-  schema: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject
+  schema: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject,
+  seen: WeakSet<object> = new WeakSet()
 ): JSONSchema7 | boolean {
   // Handle reference objects
   if ('$ref' in schema) {
@@ -169,6 +171,13 @@ export function mapOpenApiSchemaToJsonSchema(
 
   // Handle boolean schemas
   if (typeof schema === 'boolean') return schema;
+
+  // Detect cycles
+  if (seen.has(schema)) {
+    console.warn('Cycle detected in schema, returning generic object to break recursion.');
+    return { type: 'object' };
+  }
+  seen.add(schema);
 
   // Create a copy of the schema to modify
   const jsonSchema: JSONSchema7 = { ...schema } as any;
@@ -202,7 +211,7 @@ export function mapOpenApiSchemaToJsonSchema(
 
     for (const [key, propSchema] of Object.entries(jsonSchema.properties)) {
       if (typeof propSchema === 'object' && propSchema !== null) {
-        mappedProps[key] = mapOpenApiSchemaToJsonSchema(propSchema as OpenAPIV3.SchemaObject);
+        mappedProps[key] = mapOpenApiSchemaToJsonSchema(propSchema as OpenAPIV3.SchemaObject, seen);
       } else if (typeof propSchema === 'boolean') {
         mappedProps[key] = propSchema;
       }
@@ -218,9 +227,11 @@ export function mapOpenApiSchemaToJsonSchema(
     jsonSchema.items !== null
   ) {
     jsonSchema.items = mapOpenApiSchemaToJsonSchema(
-      jsonSchema.items as OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject
+      jsonSchema.items as OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject,
+      seen
     );
   }
 
+  seen.delete(schema);
   return jsonSchema;
 }
