@@ -174,64 +174,66 @@ export function mapOpenApiSchemaToJsonSchema(
 
   // Detect cycles
   if (seen.has(schema)) {
-    console.warn('Cycle detected in schema, returning generic object to break recursion.');
+    console.warn(`Cycle detected in schema${schema.title ? ` "${schema.title}"` : ''}, returning generic object to break recursion.`);
     return { type: 'object' };
   }
   seen.add(schema);
 
-  // Create a copy of the schema to modify
-  const jsonSchema: JSONSchema7 = { ...schema } as any;
+  try {
+    // Create a copy of the schema to modify
+    const jsonSchema: JSONSchema7 = { ...schema } as any;
 
-  // Convert integer type to number (JSON Schema compatible)
-  if (schema.type === 'integer') jsonSchema.type = 'number';
+    // Convert integer type to number (JSON Schema compatible)
+    if (schema.type === 'integer') jsonSchema.type = 'number';
 
-  // Remove OpenAPI-specific properties that aren't in JSON Schema
-  delete (jsonSchema as any).nullable;
-  delete (jsonSchema as any).example;
-  delete (jsonSchema as any).xml;
-  delete (jsonSchema as any).externalDocs;
-  delete (jsonSchema as any).deprecated;
-  delete (jsonSchema as any).readOnly;
-  delete (jsonSchema as any).writeOnly;
+    // Remove OpenAPI-specific properties that aren't in JSON Schema
+    delete (jsonSchema as any).nullable;
+    delete (jsonSchema as any).example;
+    delete (jsonSchema as any).xml;
+    delete (jsonSchema as any).externalDocs;
+    delete (jsonSchema as any).deprecated;
+    delete (jsonSchema as any).readOnly;
+    delete (jsonSchema as any).writeOnly;
 
-  // Handle nullable properties by adding null to the type
-  if (schema.nullable) {
-    if (Array.isArray(jsonSchema.type)) {
-      if (!jsonSchema.type.includes('null')) jsonSchema.type.push('null');
-    } else if (typeof jsonSchema.type === 'string') {
-      jsonSchema.type = [jsonSchema.type as JSONSchema7TypeName, 'null'];
-    } else if (!jsonSchema.type) {
-      jsonSchema.type = 'null';
-    }
-  }
-
-  // Recursively process object properties
-  if (jsonSchema.type === 'object' && jsonSchema.properties) {
-    const mappedProps: { [key: string]: JSONSchema7 | boolean } = {};
-
-    for (const [key, propSchema] of Object.entries(jsonSchema.properties)) {
-      if (typeof propSchema === 'object' && propSchema !== null) {
-        mappedProps[key] = mapOpenApiSchemaToJsonSchema(propSchema as OpenAPIV3.SchemaObject, seen);
-      } else if (typeof propSchema === 'boolean') {
-        mappedProps[key] = propSchema;
+    // Handle nullable properties by adding null to the type
+    if (schema.nullable) {
+      if (Array.isArray(jsonSchema.type)) {
+        if (!jsonSchema.type.includes('null')) jsonSchema.type.push('null');
+      } else if (typeof jsonSchema.type === 'string') {
+        jsonSchema.type = [jsonSchema.type as JSONSchema7TypeName, 'null'];
+      } else if (!jsonSchema.type) {
+        jsonSchema.type = 'null';
       }
     }
 
-    jsonSchema.properties = mappedProps;
-  }
+    // Recursively process object properties
+    if (jsonSchema.type === 'object' && jsonSchema.properties) {
+      const mappedProps: { [key: string]: JSONSchema7 | boolean } = {};
 
-  // Recursively process array items
-  if (
-    jsonSchema.type === 'array' &&
-    typeof jsonSchema.items === 'object' &&
-    jsonSchema.items !== null
-  ) {
-    jsonSchema.items = mapOpenApiSchemaToJsonSchema(
-      jsonSchema.items as OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject,
-      seen
-    );
-  }
+      for (const [key, propSchema] of Object.entries(jsonSchema.properties)) {
+        if (typeof propSchema === 'object' && propSchema !== null) {
+          mappedProps[key] = mapOpenApiSchemaToJsonSchema(propSchema as OpenAPIV3.SchemaObject, seen);
+        } else if (typeof propSchema === 'boolean') {
+          mappedProps[key] = propSchema;
+        }
+      }
 
-  seen.delete(schema);
-  return jsonSchema;
+      jsonSchema.properties = mappedProps;
+    }
+
+    // Recursively process array items
+    if (
+      jsonSchema.type === 'array' &&
+      typeof jsonSchema.items === 'object' &&
+      jsonSchema.items !== null
+    ) {
+      jsonSchema.items = mapOpenApiSchemaToJsonSchema(
+        jsonSchema.items as OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject,
+        seen
+      );
+    }
+    return jsonSchema;
+  } finally {
+    seen.delete(schema);
+  }
 }

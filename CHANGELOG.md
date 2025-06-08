@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Introduced a new executable command-line script for easier usage in Unix-like environments.
 
 ### Changed
-- Changed the CLI entry point to use the new `bin/openapi-mcp-generator.js` file.
+- Use new CLI entry point to use the new `bin/openapi-mcp-generator.js` file.
 - Updated build script to ensure the new CLI file has the correct permissions.
 - Refactored `index.ts` to streamline argument parsing and error handling.
 
