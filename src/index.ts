@@ -30,6 +30,7 @@ import {
 
 // Import types
 import { CliOptions, TransportType } from './types/index.js';
+import pkg from '../package.json' with { type: 'json' };
 
 // Export programmatic API
 export { getToolsFromOpenApi, McpToolDefinition, GetToolsOptions } from './api.js';
@@ -72,13 +73,12 @@ program
     (val) => parseInt(val, 10)
   )
   .option('--force', 'Overwrite existing files without prompting')
-  .version('3.1.2') // Match package.json version
-  .action(options => {
-    runGenerator(options)
-      .catch((error) => {
-        console.error('Unhandled error:', error);
-        process.exit(1);
-      });
+  .version(pkg.version) // Match package.json version
+  .action((options) => {
+    runGenerator(options).catch((error) => {
+      console.error('Unhandled error:', error);
+      process.exit(1);
+    });
   });
 
 // Export the program object for use in bin stub

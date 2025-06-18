@@ -31,10 +31,7 @@ export function extractToolsFromApi(api: OpenAPIV3.Document): McpToolDefinition[
       if (!baseName) continue;
 
       // Sanitize the name to be MCP-compatible (only a-z, 0-9, _, -)
-      baseName = baseName
-        .replace(/\./g, '_')
-        .replace(/[^a-z0-9_-]/gi, '_')
-        .toLowerCase();
+      baseName = baseName.replace(/\./g, '_').replace(/[^a-z0-9_-]/gi, '_');
 
       let finalToolName = baseName;
       let counter = 1;
@@ -174,7 +171,9 @@ export function mapOpenApiSchemaToJsonSchema(
 
   // Detect cycles
   if (seen.has(schema)) {
-    console.warn(`Cycle detected in schema${schema.title ? ` "${schema.title}"` : ''}, returning generic object to break recursion.`);
+    console.warn(
+      `Cycle detected in schema${schema.title ? ` "${schema.title}"` : ''}, returning generic object to break recursion.`
+    );
     return { type: 'object' };
   }
   seen.add(schema);
@@ -212,7 +211,10 @@ export function mapOpenApiSchemaToJsonSchema(
 
       for (const [key, propSchema] of Object.entries(jsonSchema.properties)) {
         if (typeof propSchema === 'object' && propSchema !== null) {
-          mappedProps[key] = mapOpenApiSchemaToJsonSchema(propSchema as OpenAPIV3.SchemaObject, seen);
+          mappedProps[key] = mapOpenApiSchemaToJsonSchema(
+            propSchema as OpenAPIV3.SchemaObject,
+            seen
+          );
         } else if (typeof propSchema === 'boolean') {
           mappedProps[key] = propSchema;
         }
