@@ -48,16 +48,16 @@ openapi-mcp-generator --input path/to/openapi.json --output path/to/output/dir -
 
 ### CLI Options
 
-| Option             | Alias | Description                                                                                         | Default                         |
-|--------------------|-------|-----------------------------------------------------------------------------------------------------|---------------------------------|
-| `--input`          | `-i`  | Path or URL to OpenAPI specification (YAML or JSON)                                                  | **Required**                    |
-| `--output`         | `-o`  | Directory to output the generated MCP project                                                        | **Required**                    |
-| `--server-name`    | `-n`  | Name of the MCP server (`package.json:name`)                                                         | OpenAPI title or `mcp-api-server` |
-| `--server-version` | `-v`  | Version of the MCP server (`package.json:version`)                                                   | OpenAPI version or `1.0.0`      |
-| `--base-url`       | `-b`  | Base URL for API requests. Required if OpenAPI `servers` missing or ambiguous.                       | Auto-detected if possible       |
-| `--transport`      | `-t`  | Transport mode: `"stdio"` (default), `"web"`, or `"streamable-http"`                                 | `"stdio"`                       |
-| `--port`           | `-p`  | Port for web-based transports                                                                        | `3000`                          |
-| `--force`          |       | Overwrite existing files in the output directory without confirmation                                | `false`                         |
+| Option             | Alias | Description                                                                    | Default                           |
+| ------------------ | ----- | ------------------------------------------------------------------------------ | --------------------------------- |
+| `--input`          | `-i`  | Path or URL to OpenAPI specification (YAML or JSON)                            | **Required**                      |
+| `--output`         | `-o`  | Directory to output the generated MCP project                                  | **Required**                      |
+| `--server-name`    | `-n`  | Name of the MCP server (`package.json:name`)                                   | OpenAPI title or `mcp-api-server` |
+| `--server-version` | `-v`  | Version of the MCP server (`package.json:version`)                             | OpenAPI version or `1.0.0`        |
+| `--base-url`       | `-b`  | Base URL for API requests. Required if OpenAPI `servers` missing or ambiguous. | Auto-detected if possible         |
+| `--transport`      | `-t`  | Transport mode: `"stdio"` (default), `"web"`, or `"streamable-http"`           | `"stdio"`                         |
+| `--port`           | `-p`  | Port for web-based transports                                                  | `3000`                            |
+| `--force`          |       | Overwrite existing files in the output directory without confirmation          | `false`                           |
 
 ## 📦 Programmatic API
 
@@ -74,7 +74,7 @@ const filteredTools = await getToolsFromOpenApi('https://example.com/api-spec.js
   baseUrl: 'https://api.example.com',
   dereference: true,
   excludeOperationIds: ['deletePet'],
-  filterFn: (tool) => tool.method.toLowerCase() === 'get'
+  filterFn: (tool) => tool.method.toLowerCase() === 'get',
 });
 ```
 
@@ -100,6 +100,7 @@ The generated project includes:
 ```
 
 Core dependencies:
+
 - `@modelcontextprotocol/sdk` - MCP protocol implementation
 - `axios` - HTTP client for API requests
 - `zod` - Runtime validation
@@ -138,18 +139,18 @@ Implements the MCP StreamableHTTP transport which offers:
 
 ### Transport Comparison
 
-| Feature | stdio | web (SSE) | streamable-http |
-|---------|-------|-----------|----------------|
-| Protocol | JSON-RPC over stdio | JSON-RPC over SSE | JSON-RPC over HTTP |
-| Connection | Persistent | Persistent | Request/response |
-| Bidirectional | Yes | Yes | Yes (stateful) |
-| Multiple clients | No | Yes | Yes |
-| Browser compatible | No | Yes | Yes |
-| Firewall friendly | No | Yes | Yes |
-| Load balancing | No | Limited | Yes |
-| Status codes | No | Limited | Full HTTP codes |
-| Headers | No | Limited | Full HTTP headers |
-| Test client | No | Yes | Yes |
+| Feature            | stdio               | web (SSE)         | streamable-http    |
+| ------------------ | ------------------- | ----------------- | ------------------ |
+| Protocol           | JSON-RPC over stdio | JSON-RPC over SSE | JSON-RPC over HTTP |
+| Connection         | Persistent          | Persistent        | Request/response   |
+| Bidirectional      | Yes                 | Yes               | Yes (stateful)     |
+| Multiple clients   | No                  | Yes               | Yes                |
+| Browser compatible | No                  | Yes               | Yes                |
+| Firewall friendly  | No                  | Yes               | Yes                |
+| Load balancing     | No                  | Limited           | Yes                |
+| Status codes       | No                  | Limited           | Full HTTP codes    |
+| Headers            | No                  | Limited           | Full HTTP headers  |
+| Test client        | No                  | Yes               | Yes                |
 
 ---
 
@@ -157,12 +158,12 @@ Implements the MCP StreamableHTTP transport which offers:
 
 Configure auth credentials in your environment:
 
-| Auth Type   | Variable Format                                         |
-|-------------|----------------------------------------------------------|
-| API Key     | `API_KEY_<SCHEME_NAME>`                                  |
-| Bearer      | `BEARER_TOKEN_<SCHEME_NAME>`                             |
-| Basic Auth  | `BASIC_USERNAME_<SCHEME_NAME>`, `BASIC_PASSWORD_<SCHEME_NAME>` |
-| OAuth2      | `OAUTH_CLIENT_ID_<SCHEME_NAME>`, `OAUTH_CLIENT_SECRET_<SCHEME_NAME>`, `OAUTH_SCOPES_<SCHEME_NAME>` |
+| Auth Type  | Variable Format                                                                                    |
+| ---------- | -------------------------------------------------------------------------------------------------- |
+| API Key    | `API_KEY_<SCHEME_NAME>`                                                                            |
+| Bearer     | `BEARER_TOKEN_<SCHEME_NAME>`                                                                       |
+| Basic Auth | `BASIC_USERNAME_<SCHEME_NAME>`, `BASIC_PASSWORD_<SCHEME_NAME>`                                     |
+| OAuth2     | `OAUTH_CLIENT_ID_<SCHEME_NAME>`, `OAUTH_CLIENT_SECRET_<SCHEME_NAME>`, `OAUTH_SCOPES_<SCHEME_NAME>` |
 
 ---
 
@@ -214,8 +215,9 @@ Contributions are welcome!
 
 1. Fork the repo
 2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit your changes: `git commit -m "Add amazing feature"`
-4. Push and open a PR
+3. Run `npm run format.write` to format your code
+4. Commit your changes: `git commit -m "Add amazing feature"`
+5. Push and open a PR
 
 📌 Repository: [github.com/harsha-iiiv/openapi-mcp-generator](https://github.com/harsha-iiiv/openapi-mcp-generator)
 
