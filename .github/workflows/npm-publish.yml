@@ -23,7 +23,7 @@ jobs:
         with:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
-          cache: 'npm'                     # Enables npm dependency caching
+          cache: 'npm' # Enables npm dependency caching
           cache-dependency-path: '**/package-lock.json' # Cache key based on lockfile
 
       - name: Install dependencies
