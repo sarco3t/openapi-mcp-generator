@@ -1,12 +1,7 @@
 {
   "parser": "@typescript-eslint/parser",
-  "extends": [
-    "eslint:recommended",
-    "plugin:@typescript-eslint/recommended"
-  ],
-  "plugins": [
-    "@typescript-eslint"
-  ],
+  "extends": ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
+  "plugins": ["@typescript-eslint"],
   "env": {
     "node": true,
     "es2022": true
@@ -15,10 +10,7 @@
     "no-console": [
       "error",
       {
-        "allow": [
-          "error",
-          "warn"
-        ]
+        "allow": ["error", "warn"]
       }
     ],
     "@typescript-eslint/explicit-function-return-type": "off",

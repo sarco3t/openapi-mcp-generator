@@ -1,4 +1,3 @@
-
 /**
  * Generator for StreamableHTTP server code for the MCP server using Hono
  */

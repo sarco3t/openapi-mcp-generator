@@ -21,16 +21,19 @@ import { getToolsFromOpenApi } from 'openapi-mcp-generator';
 This function extracts an array of tools from an OpenAPI specification.
 
 **Parameters:**
+
 - `specPathOrUrl`: Path to a local OpenAPI spec file or URL to a remote spec
 - `options`: (Optional) Configuration options
 
 **Options:**
+
 - `baseUrl`: Override the base URL in the OpenAPI spec
 - `dereference`: Whether to resolve $refs (default: false)
 - `excludeOperationIds`: Array of operation IDs to exclude from the results
 - `filterFn`: Custom function to filter tools (receives tool, returns boolean)
 
 **Returns:**
+
 - Promise that resolves to an array of McpToolDefinition objects
 
 **Example:**
@@ -42,12 +45,15 @@ import { getToolsFromOpenApi } from 'openapi-mcp-generator';
 const tools = await getToolsFromOpenApi('./petstore.json');
 
 // With options
-const filteredTools = await getToolsFromOpenApi('https://petstore3.swagger.io/api/v3/openapi.json', {
-  baseUrl: 'https://petstore3.swagger.io/api/v3',
-  dereference: true,
-  excludeOperationIds: ['addPet', 'updatePet'],
-  filterFn: (tool) => tool.method.toLowerCase() === 'get'
-});
+const filteredTools = await getToolsFromOpenApi(
+  'https://petstore3.swagger.io/api/v3/openapi.json',
+  {
+    baseUrl: 'https://petstore3.swagger.io/api/v3',
+    dereference: true,
+    excludeOperationIds: ['addPet', 'updatePet'],
+    filterFn: (tool) => tool.method.toLowerCase() === 'get',
+  }
+);
 
 // Process the results
 for (const tool of filteredTools) {
@@ -66,34 +72,34 @@ Each tool definition (`McpToolDefinition`) has the following properties:
 interface McpToolDefinition {
   /** Name of the tool, must be unique */
   name: string;
-  
+
   /** Human-readable description of the tool */
   description: string;
-  
+
   /** JSON Schema that defines the input parameters */
   inputSchema: JSONSchema7 | boolean;
-  
+
   /** HTTP method for the operation (get, post, etc.) */
   method: string;
-  
+
   /** URL path template with parameter placeholders */
   pathTemplate: string;
-  
+
   /** OpenAPI parameter objects for this operation */
   parameters: OpenAPIV3.ParameterObject[];
-  
+
   /** Parameter names and locations for execution */
   executionParameters: { name: string; in: string }[];
-  
+
   /** Content type for request body, if applicable */
   requestBodyContentType?: string;
-  
+
   /** Security requirements for this operation */
   securityRequirements: OpenAPIV3.SecurityRequirementObject[];
-  
+
   /** Original operation ID from the OpenAPI spec */
   operationId: string;
-  
+
   /** Base URL for the API (if available) */
   baseUrl?: string;
 }
@@ -105,7 +111,7 @@ interface McpToolDefinition {
 
 ```typescript
 const getTools = await getToolsFromOpenApi(specUrl, {
-  filterFn: (tool) => tool.method.toLowerCase() === 'get'
+  filterFn: (tool) => tool.method.toLowerCase() === 'get',
 });
 ```
 
@@ -113,7 +119,7 @@ const getTools = await getToolsFromOpenApi(specUrl, {
 
 ```typescript
 const secureTools = await getToolsFromOpenApi(specUrl, {
-  filterFn: (tool) => tool.securityRequirements.length > 0
+  filterFn: (tool) => tool.securityRequirements.length > 0,
 });
 ```
 
@@ -121,7 +127,7 @@ const secureTools = await getToolsFromOpenApi(specUrl, {
 
 ```typescript
 const userTools = await getToolsFromOpenApi(specUrl, {
-  filterFn: (tool) => tool.pathTemplate.includes('/user')
+  filterFn: (tool) => tool.pathTemplate.includes('/user'),
 });
 ```
 
@@ -130,8 +136,6 @@ const userTools = await getToolsFromOpenApi(specUrl, {
 ```typescript
 const safeUserTools = await getToolsFromOpenApi(specUrl, {
   excludeOperationIds: ['deleteUser', 'updateUser'],
-  filterFn: (tool) => 
-    tool.pathTemplate.includes('/user') &&
-    tool.method.toLowerCase() === 'get'
+  filterFn: (tool) => tool.pathTemplate.includes('/user') && tool.method.toLowerCase() === 'get',
 });
 ```
