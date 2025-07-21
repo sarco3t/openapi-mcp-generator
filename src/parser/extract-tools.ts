@@ -27,11 +27,17 @@ export function extractToolsFromApi(api: OpenAPIV3.Document): McpToolDefinition[
       if (!operation) continue;
 
       // Generate a unique name for the tool
-      let baseName = operation.operationId || generateOperationId(method, path);
+      let baseName = operation.summary || operation.operationId || generateOperationId(method, path);
       if (!baseName) continue;
+
 
       // Sanitize the name to be MCP-compatible (only a-z, 0-9, _, -)
       baseName = baseName.replace(/\./g, '_').replace(/[^a-z0-9_-]/gi, '_');
+
+      while (baseName.length > 50) {
+        baseName = baseName.split('_').slice(0, -1).join('_');
+      }
+
 
       let finalToolName = baseName;
       let counter = 1;
