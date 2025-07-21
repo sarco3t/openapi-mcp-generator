@@ -6,8 +6,7 @@ on:
       - main
 
 permissions:
-  contents: read
-  packages: write
+  contents: write
 
 jobs:
   build-and-publish:
@@ -32,6 +31,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Create .tgz package
+        run: npm pack
+
       - name: Check version change
         id: check_version
         run: |
@@ -45,8 +47,11 @@ jobs:
             echo "version_changed=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Publish to npm
+      - name: Upload .tgz to GitHub Release
         if: steps.check_version.outputs.version_changed == 'true'
-        run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: "./*.tgz"
+          asset_name: "package-${{ github.event.release.tag_name }}.tgz"
+          asset_content_type: application/gzip
