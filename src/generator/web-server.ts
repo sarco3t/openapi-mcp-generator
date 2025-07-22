@@ -151,19 +151,20 @@ async send(message: JSONRPCMessage): Promise<void> {
 /**
 * Sets up a web server for the MCP server using Server-Sent Events (SSE)
 * 
-* @param server The MCP Server instance
-* @param port The port to listen on (default: ${port})
+* @param createServer A function that creates a new MCP Server instance for each client
+* @param port The port to listen on (default: 3001)
 * @returns The Hono app instance
 */
-export async function setupWebServer(server: Server, port = ${port}) {
+export async function setupWebServer(createServer: () => Server, port = 3001) {
 // Create Hono app
 const app = new Hono();
 
 // Enable CORS
 app.use('*', cors());
 
-// Store active SSE transports by session ID
-const transports: {[sessionId: string]: SSETransport} = {};
+// Store active SSE transports and their associated servers by session ID
+const transports: Record<string, SSETransport> = {};
+const servers: Record<string, Server> = {};
 
 // Add a simple health check endpoint
 app.get('/health', (c) => {
@@ -179,27 +180,26 @@ app.get("/sse", (c) => {
     
     console.error(\`New SSE connection established: \${sessionId}\`);
     
-    // Store the transport
+    // Create a dedicated server instance for this client
+    const server = createServer();
+    
+    // Store the transport and server
     transports[sessionId] = transport;
+    servers[sessionId] = server;
     
     // Set up cleanup on transport close
     transport.onclose = () => {
       console.error(\`SSE connection closed for session \${sessionId}\`);
       delete transports[sessionId];
+      delete servers[sessionId];
     };
     
     // Make the transport available to the MCP server
     try {
-      transport.onmessage = async (message: JSONRPCMessage) => {
-        try {
-          // The server will automatically send a response via the transport 
-          // if the message has an ID (i.e., it's a request, not a notification)
-        } catch (error) {
-          console.error('Error handling MCP message:', error);
-        }
-      };
+      // The server will handle messages from this specific client
+      // No need to route between sessions - each server handles its own client
       
-      // Connect to the MCP server
+      // Connect to the MCP server (each client gets its own server instance)
       await server.connect(transport);
     } catch (error) {
       console.error(\`Error connecting transport for session \${sessionId}:\`, error);
@@ -295,7 +295,8 @@ serve({
 
 return app;
 }
-`;
+  
+`
 }
 
 /**
