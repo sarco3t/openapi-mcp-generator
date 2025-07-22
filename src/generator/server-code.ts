@@ -51,7 +51,7 @@ export function generateMcpServerCode(
       transportImport = `\nimport { setupWebServer } from "./web-server.js";`;
       transportCode = `// Set up Web Server transport
   try {
-    await setupWebServer(server, ${options.port || 3000});
+    await setupWebServer(createServer, ${options.port || 3000});
   } catch (error) {
     console.error("Error setting up web server:", error);
     process.exit(1);
@@ -139,6 +139,39 @@ const server = new Server(
     { name: SERVER_NAME, version: SERVER_VERSION },
     { capabilities: { tools: {} } }
 );
+
+/**
+ * Creates a new MCP Server instance with all handlers configured
+ */
+function createServer(): Server {
+  const newServer = new Server(
+    { name: SERVER_NAME, version: SERVER_VERSION },
+    { capabilities: { tools: {} } }
+  );
+
+  // Set up list tools handler
+  newServer.setRequestHandler(ListToolsRequestSchema, async () => {
+    const toolsForClient: Tool[] = Array.from(toolDefinitionMap.values()).map(tool => ({
+      name: tool.name,
+      description: tool.description,
+      inputSchema: tool.inputSchema
+    }));
+    return { tools: toolsForClient };
+  });
+
+  // Set up call tool handler
+  newServer.setRequestHandler(CallToolRequestSchema, async (request: CallToolRequest): Promise<CallToolResult> => {
+    const { name: toolName, arguments: toolArgs } = request.params;
+    const toolDefinition = toolDefinitionMap.get(toolName);
+    if (!toolDefinition) {
+      console.error(\`Error: Unknown tool requested: \${toolName}\`);
+      return { content: [{ type: "text", text: \`Error: Unknown tool requested: \${toolName}\` }] };
+    }
+    return await executeApiTool(toolName, toolDefinition, toolArgs ?? {}, securitySchemes);
+  });
+
+  return newServer;
+}
 
 /**
  * Map of tool definitions by name
